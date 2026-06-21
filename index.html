@@ -165,21 +165,23 @@ function vibrate(){
  }
 }
 
-async function loadTxt(file){
+ async function loadTxt(file){
 
- const res=await fetch(file);
+ const res = await fetch(
+   file + "?v=" + Date.now()
+ );
 
  if(!res.ok){
   return [];
  }
 
- const text=await res.text();
+ const text = await res.text();
 
  return text
- .split(/\r?\n/)
- .map(v=>v.trim())
- .filter(v=>v);
-}
+   .split(/\r?\n/)
+   .map(v => v.trim())
+   .filter(v => v);
+ }
 
 async function reloadData(){
 
