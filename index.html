@@ -176,7 +176,7 @@ async function loadTxt(file){
  const text=await res.text();
 
  return text
- .split(/\\r?\\n/)
+ .split(/\r?\n/)
  .map(v=>v.trim())
  .filter(v=>v);
 }
