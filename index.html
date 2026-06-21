@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Truth or Dare</title>
+<meta name="theme-color" content="#111111">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif}
+body{
+background:#111;color:#fff;min-height:100vh;
+display:flex;justify-content:center;align-items:center;
+padding:20px
+}
+.container{width:100%;max-width:800px;text-align:center}
+h1{margin-bottom:30px;font-size:3rem}
+
+.switch-area{
+margin-bottom:25px;
+display:flex;
+justify-content:center;
+align-items:center;
+gap:15px;
+}
+
+.switch{
+position:relative;
+width:60px;
+height:34px;
+}
+
+.switch input{display:none}
+
+.slider{
+position:absolute;
+cursor:pointer;
+inset:0;
+background:#666;
+border-radius:34px;
+transition:.3s;
+}
+
+.slider:before{
+content:"";
+position:absolute;
+width:26px;
+height:26px;
+left:4px;
+top:4px;
+background:white;
+border-radius:50%;
+transition:.3s;
+}
+
+input:checked + .slider{
+background:#6c5ce7;
+}
+
+input:checked + .slider:before{
+transform:translateX(26px);
+}
+
+.buttons{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+margin-bottom:25px;
+}
+
+button{
+border:none;
+cursor:pointer;
+padding:18px;
+font-size:1.1rem;
+font-weight:bold;
+border-radius:15px;
+transition:.2s;
+}
+
+button:hover{transform:scale(1.03)}
+
+.truth{background:#00b894;color:white}
+.dare{background:#d63031;color:white}
+
+.card{
+background:#1f1f1f;
+padding:40px;
+border-radius:20px;
+min-height:250px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:1.5rem;
+line-height:1.6;
+}
+
+.actions{
+margin-top:20px;
+display:flex;
+justify-content:center;
+gap:10px;
+flex-wrap:wrap;
+}
+
+.secondary,.pin{
+background:#555;
+color:white;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>Truth or Dare</h1>
+
+<div class="switch-area">
+
+<label class="switch">
+<input type="checkbox" id="adultSwitch">
+<span class="slider"></span>
+</label>
+
+<span id="adultLabel">
+Adult Mode OFF
+</span>
+
+</div>
+
+<div class="buttons">
+<button class="truth" onclick="showTruth()">Truth</button>
+<button class="dare" onclick="showDare()">Dare</button>
+</div>
+
+<div class="card" id="card">
+불러오는 중...
+</div>
+
+<div class="actions">
+<button class="secondary" onclick="reloadData()">새로고침</button>
+<button class="pin" onclick="setPin()">PIN 설정</button>
+</div>
+
+</div>
+
+<script>
+
+let truths=[];
+let dares=[];
+
+let adultTruths=[];
+let adultDares=[];
+
+let truthPool=[];
+let darePool=[];
+
+let adultTruthPool=[];
+let adultDarePool=[];
+
+let adultUnlocked=false;
+
+function vibrate(){
+ if(navigator.vibrate){
+  navigator.vibrate(100);
+ }
+}
+
+async function loadTxt(file){
+
+ const res=await fetch(file);
+
+ if(!res.ok){
+  return [];
+ }
+
+ const text=await res.text();
+
+ return text
+ .split(/\\r?\\n/)
+ .map(v=>v.trim())
+ .filter(v=>v);
+}
+
+async function reloadData(){
+
+ document.getElementById("card").innerText="불러오는 중...";
+
+ truths=await loadTxt("truth.txt");
+ dares=await loadTxt("dare.txt");
+
+ adultTruths=await loadTxt("adult_truth.txt");
+ adultDares=await loadTxt("adult_dare.txt");
+
+ truthPool=[...truths];
+ darePool=[...dares];
+
+ adultTruthPool=[...adultTruths];
+ adultDarePool=[...adultDares];
+
+ document.getElementById("card").innerText=
+ `Truth ${truths.length}개 / Dare ${dares.length}개`;
+}
+
+function randomItem(pool,source){
+
+ if(source.length===0){
+  return "질문이 없습니다.";
+ }
+
+ if(pool.length===0){
+  pool.push(...source);
+ }
+
+ const idx=Math.floor(Math.random()*pool.length);
+
+ const item=pool[idx];
+
+ pool.splice(idx,1);
+
+ return item;
+}
+
+function showText(text){
+ vibrate();
+ document.getElementById("card").innerText=text;
+}
+
+function showTruth(){
+
+ const list=adultUnlocked
+ ? adultTruths
+ : truths;
+
+ const pool=adultUnlocked
+ ? adultTruthPool
+ : truthPool;
+
+ showText(
+  randomItem(pool,list)
+ );
+}
+
+function showDare(){
+
+ const list=adultUnlocked
+ ? adultDares
+ : dares;
+
+ const pool=adultUnlocked
+ ? adultDarePool
+ : darePool;
+
+ showText(
+  randomItem(pool,list)
+ );
+}
+
+function setPin(){
+
+ const pin=prompt("새 PIN 입력");
+
+ if(!pin) return;
+
+ localStorage.setItem(
+  "adultPin",
+  pin
+ );
+
+ alert("PIN 저장 완료");
+}
+
+const adultSwitch=
+document.getElementById("adultSwitch");
+
+const adultLabel=
+document.getElementById("adultLabel");
+
+adultSwitch.addEventListener(
+"change",
+()=>{
+
+ if(adultSwitch.checked){
+
+  const saved=
+  localStorage.getItem("adultPin");
+
+  if(!saved){
+
+   alert(
+   "먼저 PIN을 설정해주세요."
+   );
+
+   adultSwitch.checked=false;
+
+   return;
+  }
+
+  const pin=prompt("PIN 입력");
+
+  if(pin===saved){
+
+   adultUnlocked=true;
+
+   adultLabel.innerText=
+   "Adult Mode ON";
+
+  }else{
+
+   adultSwitch.checked=false;
+
+   adultUnlocked=false;
+
+   alert("PIN 불일치");
+
+  }
+
+ }else{
+
+  adultUnlocked=false;
+
+  adultLabel.innerText=
+  "Adult Mode OFF";
+
+ }
+
+});
+
+reloadData();
+
+</script>
+
+</body>
+</html>
